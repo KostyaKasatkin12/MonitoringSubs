@@ -27,6 +27,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 
 # ---------- Настройки ----------
+
 SECRET_KEY = "supersecretkeyforjwt123!"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
@@ -509,6 +510,17 @@ async def send_email_notification(to_email: str, subject: str, body: str):
         print(f"📄 ТЕКСТ:\n{body}")
         print("=" * 60 + "\n")
 
+        # Проверяем, запущено ли на Render
+        is_render = os.environ.get('RENDER', False)
+
+        if is_render:
+            # На Render - только логируем, не отправляем
+            print("⚠️ Render environment detected - email sending disabled")
+            print(f"Would send email to: {to_email}")
+            print(f"Subject: {subject}")
+            return True
+
+        # Локально - отправляем реальное письмо
         msg = MIMEMultipart()
         msg['From'] = f"{FROM_NAME} <{FROM_EMAIL}>"
         msg['To'] = to_email
@@ -526,11 +538,11 @@ async def send_email_notification(to_email: str, subject: str, body: str):
 
     except smtplib.SMTPAuthenticationError as e:
         print(f"❌ Ошибка авторизации Gmail: {e}")
-        return True
+        return True  # Возвращаем True, чтобы не блокировать импорт
     except Exception as e:
         print(f"❌ Ошибка при отправке: {e}")
+        # На Render не блокируем импорт из-за ошибки отправки
         return True
-
 
 async def check_and_send_notifications():
     """Проверка подписок и отправка уведомлений"""
@@ -921,7 +933,8 @@ class EmailSubscriptionParser:
             # Слова-маркеры подписок
             subscription_keywords = [
                 'подписка', 'subscription', 'оплата', 'payment', 'списание',
-                'renewal', 'продление', 'invoice', 'счет', 'receipt', 'чек'
+                'renewal', 'продление', 'invoice', 'счет', 'receipt', 'чек',
+                'тест', 'test', 'premium', 'плюс', 'plus'
             ]
 
             is_subscription = any(keyword in text_to_check for keyword in subscription_keywords)
@@ -935,25 +948,61 @@ class EmailSubscriptionParser:
             # Пытаемся найти название сервиса
             name = None
 
-            # Из отправителя
-            if '@' in from_addr:
-                # Пробуем извлечь домен
-                domain = from_addr.split('@')[1].split('.')[0].lower()
-                if domain in ['netflix', 'spotify', 'apple', 'google', 'yandex', 'mail', 'youtube']:
-                    name = domain.capitalize()
-
-            # Из темы
+            # Расширенный список сервисов
             common_services = {
-                'netflix': 'Netflix', 'spotify': 'Spotify', 'apple': 'Apple',
-                'google': 'Google', 'yandex': 'Яндекс', 'mail.ru': 'Mail.ru',
-                'youtube': 'YouTube', 'amazon': 'Amazon', 'paypal': 'PayPal',
-                'adobe': 'Adobe', 'microsoft': 'Microsoft', 'notion': 'Notion'
+                'netflix': 'Netflix',
+                'spotify': 'Spotify',
+                'apple': 'Apple',
+                'google': 'Google',
+                'yandex': 'Яндекс',
+                'mail.ru': 'Mail.ru',
+                'youtube': 'YouTube',
+                'amazon': 'Amazon',
+                'paypal': 'PayPal',
+                'adobe': 'Adobe',
+                'microsoft': 'Microsoft',
+                'notion': 'Notion',
+                'claude': 'Claude',
+                'chatgpt': 'ChatGPT',
+                'openai': 'OpenAI',
+                'midjourney': 'Midjourney',
+                'figma': 'Figma',
+                'canva': 'Canva',
+                'slack': 'Slack',
+                'zoom': 'Zoom',
+                'dropbox': 'Dropbox',
+                'icloud': 'iCloud',
+                'tinkoff': 'Тинькофф',
+                'сбер': 'Сбер',
+                'ozon': 'Ozon',
+                'wildberries': 'Wildberries',
+                'steam': 'Steam',
+                'playstation': 'PlayStation',
+                'xbox': 'Xbox'
             }
 
+            # Ищем в теме
+            subject_lower = subject.lower()
             for service, full_name in common_services.items():
-                if service in text_to_check:
+                if service in subject_lower:
                     name = full_name
                     break
+
+            # Ищем в теле
+            if not name:
+                for service, full_name in common_services.items():
+                    if service in text_to_check:
+                        name = full_name
+                        break
+
+            # Если не нашли, берем первое слово из темы
+            if not name:
+                # Пробуем взять первое слово из темы
+                words = subject.split()
+                if words:
+                    name = words[0].strip()
+                    # Убираем эмодзи и спецсимволы
+                    name = re.sub(r'[^\w\s]', '', name)
 
             if not name:
                 name = "Неизвестный сервис"
@@ -967,7 +1016,8 @@ class EmailSubscriptionParser:
                 r'(\d+[\.,]?\d*)\s*USD',
                 r'(\d+[\.,]?\d*)\s*EUR',
                 r'price:?\s*(\d+[\.,]?\d*)',
-                r'sum:?\s*(\d+[\.,]?\d*)'
+                r'sum:?\s*(\d+[\.,]?\d*)',
+                r'(\d+[\.,]?\d*)\s*₽'
             ]
 
             for pattern in price_patterns:
@@ -975,6 +1025,10 @@ class EmailSubscriptionParser:
                 if match:
                     price = float(match.group(1).replace(',', '.'))
                     break
+
+            # Если цена не найдена, ставим 0
+            if not price:
+                price = 0
 
             # Определяем валюту
             currency = "RUB"
@@ -990,7 +1044,7 @@ class EmailSubscriptionParser:
 
             result = {
                 'name': name,
-                'price': price if price else 0,
+                'price': price,
                 'currency': currency,
                 'period': period,
                 'next_payment': None
