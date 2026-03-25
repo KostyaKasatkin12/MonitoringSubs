@@ -50,9 +50,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Хеширование паролей
+# Замените настройку pwd_context:
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
+    schemes=["pbkdf2_sha256", "bcrypt"],  # pbkdf2_sha256 как основной
     deprecated="auto",
+    pbkdf2_sha256__rounds=260000,  # Хороший уровень безопасности
     bcrypt__rounds=12
 )
 
@@ -254,7 +256,10 @@ Base.metadata.create_all(bind=engine)
 # ---------- Pydantic схемы ----------
 class UserCreate(BaseModel):
     email: str
-    password: str
+    password: str  # Убедитесь, что здесь нет никаких валидаторов
+
+    # Если есть model_config, убедитесь, что он не изменяет данные
+    model_config = ConfigDict(extra='forbid')
 
 
 class UserOut(BaseModel):
@@ -379,15 +384,33 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     """Хеширование пароля с обрезкой до 72 символов"""
-    # Преобразуем в строку, если это байты
-    if isinstance(password, bytes):
-        password = password.decode('utf-8')
+    try:
+        logger.info(f"get_password_hash input type: {type(password)}, value: {password}")
 
-    # Обрезаем строку до 72 символов
-    if len(password) > 72:
-        password = password[:72]
+        # Преобразуем в строку, если это байты
+        if isinstance(password, bytes):
+            password = password.decode('utf-8')
+            logger.info(f"Decoded bytes to string: {password}")
 
-    return pwd_context.hash(password)
+        # Проверяем длину в байтах (важно для bcrypt!)
+        password_bytes = password.encode('utf-8')
+        logger.info(f"Password length in bytes: {len(password_bytes)}")
+
+        # Обрезаем до 72 байт, если нужно
+        if len(password_bytes) > 72:
+            logger.warning(f"Password too long ({len(password_bytes)} bytes), truncating to 72 bytes")
+            password = password[:72]
+            password_bytes = password.encode('utf-8')
+
+        # Хешируем строку
+        result = pwd_context.hash(password)
+        logger.info(f"Password hashed successfully, hash length: {len(result)}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in get_password_hash: {e}")
+        logger.error(f"Password type: {type(password)}, value: {password}")
+        raise
 
 
 def authenticate_user(db: Session, email: str, password: str):
@@ -1201,6 +1224,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     try:
         logger.info(f"=== REGISTRATION ATTEMPT ===")
         logger.info(f"Email: {user.email}")
+        logger.info(f"Password length: {len(user.password)}")
+        logger.info(f"Password bytes length: {len(user.password.encode('utf-8'))}")
+        logger.info(f"Password value: '{user.password}'")
 
         # Проверка существования пользователя
         db_user = db.query(User).filter(User.email == user.email).first()
@@ -1213,17 +1239,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             logger.warning(f"Password too short for {user.email}")
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
-        if len(user.password) > 72:
-            logger.warning(f"Password too long for {user.email} ({len(user.password)} chars)")
-            # Обрезаем пароль до 72 символов
-            truncated_password = user.password[:72]
-            logger.info(f"Truncated password from {len(user.password)} to 72 chars")
-        else:
-            truncated_password = user.password
-
         # Хеширование пароля
         logger.info(f"Hashing password for {user.email}")
-        hashed = get_password_hash(truncated_password)
+        hashed = get_password_hash(user.password)
 
         # Создание пользователя
         new_user = User(email=user.email, hashed_password=hashed)
