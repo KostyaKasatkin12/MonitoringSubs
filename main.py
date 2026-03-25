@@ -922,124 +922,173 @@ class EmailSubscriptionParser:
         return body
 
     async def extract_subscription_info_with_ai(self, subject: str, body: str, from_addr: str) -> Optional[Dict]:
-        """Упрощенный парсер подписок из писем"""
+        """Расширенный парсер подписок из писем"""
         try:
             logger.info(f"📧 Анализ письма: {subject[:100]}")
-            logger.info(f"✉️ От: {from_addr}")
 
-            # Проверяем ключевые слова в теме и теле
-            text_to_check = (subject + " " + body[:500]).lower()
+            text_to_check = (subject + " " + body[:1500]).lower()
 
-            # Слова-маркеры подписок
+            # Расширенные ключевые слова подписок
             subscription_keywords = [
                 'подписка', 'subscription', 'оплата', 'payment', 'списание',
                 'renewal', 'продление', 'invoice', 'счет', 'receipt', 'чек',
-                'тест', 'test', 'premium', 'плюс', 'plus'
+                'тест', 'test', 'premium', 'плюс', 'plus', 'напоминание',
+                'reminder', 'спишется', 'будет списано', 'дебет'
             ]
 
             is_subscription = any(keyword in text_to_check for keyword in subscription_keywords)
 
             if not is_subscription:
-                logger.info(f"❌ Не похоже на подписку: {subject}")
                 return None
 
-            logger.info(f"✅ Похоже на подписку: {subject}")
-
-            # Пытаемся найти название сервиса
-            name = None
-
-            # Расширенный список сервисов
+            # Расширенный словарь сервисов (включая сокращения)
             common_services = {
+                # Видео
                 'netflix': 'Netflix',
-                'spotify': 'Spotify',
-                'apple': 'Apple',
-                'google': 'Google',
-                'yandex': 'Яндекс',
-                'mail.ru': 'Mail.ru',
+                'ivi': 'Ivi',
+                'okko': 'Okko',
+                'wink': 'Wink',
+                'кинопоиск': 'Кинопоиск',
+                'kinopoisk': 'Кинопоиск',
                 'youtube': 'YouTube',
-                'amazon': 'Amazon',
-                'paypal': 'PayPal',
-                'adobe': 'Adobe',
-                'microsoft': 'Microsoft',
-                'notion': 'Notion',
+                'youtube premium': 'YouTube Premium',
+
+                # Музыка
+                'spotify': 'Spotify',
+                'apple music': 'Apple Music',
+                'yandex music': 'Яндекс Музыка',
+                'яндекс музыка': 'Яндекс Музыка',
+                'ямузыка': 'Яндекс Музыка',
+                'ям': 'Яндекс Музыка',  # Добавляем сокращение
+                'deezer': 'Deezer',
+
+                # AI
                 'claude': 'Claude',
                 'chatgpt': 'ChatGPT',
                 'openai': 'OpenAI',
                 'midjourney': 'Midjourney',
+                'copilot': 'Copilot',
+
+                # Дизайн
+                'photoshop': 'Photoshop',
+                'adobe': 'Adobe',
                 'figma': 'Figma',
                 'canva': 'Canva',
+
+                # Облако
+                'icloud': 'iCloud',
+                'google drive': 'Google Drive',
+                'dropbox': 'Dropbox',
+                'yandex disk': 'Яндекс Диск',
+
+                # Работа
+                'notion': 'Notion',
                 'slack': 'Slack',
                 'zoom': 'Zoom',
-                'dropbox': 'Dropbox',
-                'icloud': 'iCloud',
-                'tinkoff': 'Тинькофф',
+                'microsoft': 'Microsoft',
+                'office': 'Microsoft Office',
+
+                # Банки и финансы
+                'tinkoff': 'Т-Банк',
+                'т-банк': 'Т-Банк',
+                'тинькофф': 'Т-Банк',
                 'сбер': 'Сбер',
+                'sber': 'Сбер',
+                'alfa': 'Альфа-Банк',
+                'raiffeisen': 'Райффайзен',
+
+                # Покупки
                 'ozon': 'Ozon',
                 'wildberries': 'Wildberries',
+                'wb': 'Wildberries',
+                'market': 'Яндекс Маркет',
+
+                # Игры
                 'steam': 'Steam',
                 'playstation': 'PlayStation',
-                'xbox': 'Xbox'
+                'xbox': 'Xbox',
+                'nintendo': 'Nintendo'
             }
 
-            # Ищем в теме
+            # Ищем название
+            name = None
             subject_lower = subject.lower()
+
             for service, full_name in common_services.items():
-                if service in subject_lower:
+                if service in subject_lower or service in text_to_check:
                     name = full_name
                     break
 
-            # Ищем в теле
+            # Если не нашли, пробуем взять из темы первое слово без эмодзи
             if not name:
-                for service, full_name in common_services.items():
-                    if service in text_to_check:
-                        name = full_name
+                # Удаляем эмодзи
+                clean_subject = re.sub(r'[^\w\s]', '', subject)
+                words = clean_subject.split()
+                for word in words:
+                    if len(word) > 2 and word not in ['спишется', 'через', 'напоминание', 'срочно']:
+                        name = word.capitalize()
                         break
-
-            # Если не нашли, берем первое слово из темы
-            if not name:
-                # Пробуем взять первое слово из темы
-                words = subject.split()
-                if words:
-                    name = words[0].strip()
-                    # Убираем эмодзи и спецсимволы
-                    name = re.sub(r'[^\w\s]', '', name)
 
             if not name:
                 name = "Неизвестный сервис"
 
-            # Пытаемся найти цену
+            # Улучшенный поиск цены
             price = None
+
+            # Ищем в теле письма
             price_patterns = [
                 r'(\d+[\.,]?\d*)\s*₽',
                 r'(\d+[\.,]?\d*)\s*руб',
+                r'(\d+[\.,]?\d*)\s*RUB',
                 r'(\d+[\.,]?\d*)\s*\$',
                 r'(\d+[\.,]?\d*)\s*USD',
                 r'(\d+[\.,]?\d*)\s*EUR',
                 r'price:?\s*(\d+[\.,]?\d*)',
                 r'sum:?\s*(\d+[\.,]?\d*)',
-                r'(\d+[\.,]?\d*)\s*₽'
+                r'сумма:?\s*(\d+[\.,]?\d*)',
+                r'списано:?\s*(\d+[\.,]?\d*)',
+                r'оплачено:?\s*(\d+[\.,]?\d*)'
             ]
 
             for pattern in price_patterns:
-                match = re.search(pattern, body[:1000], re.IGNORECASE)
-                if match:
-                    price = float(match.group(1).replace(',', '.'))
-                    break
+                matches = re.findall(pattern, body[:2000], re.IGNORECASE)
+                if matches:
+                    # Берем первое найденное число
+                    price = float(matches[0].replace(',', '.'))
+                    if price > 0:
+                        break
 
-            # Если цена не найдена, ставим 0
+            # Если цена не найдена, ищем в теме
+            if not price:
+                for pattern in price_patterns:
+                    match = re.search(pattern, subject, re.IGNORECASE)
+                    if match:
+                        price = float(match.group(1).replace(',', '.'))
+                        break
+
+            # Если все еще нет цены, пробуем найти любые числа
+            if not price:
+                numbers = re.findall(r'(\d+[\.,]?\d*)', body[:1000])
+                for num in numbers:
+                    val = float(num.replace(',', '.'))
+                    # Подозрительные суммы: от 50 до 5000
+                    if 50 <= val <= 5000:
+                        price = val
+                        break
+
             if not price:
                 price = 0
 
             # Определяем валюту
             currency = "RUB"
-            if 'usd' in text_to_check or '$' in text_to_check:
+            if any(x in text_to_check for x in ['usd', '$', 'доллар']):
                 currency = "USD"
-            elif 'eur' in text_to_check or '€' in text_to_check:
+            elif any(x in text_to_check for x in ['eur', '€', 'евро']):
                 currency = "EUR"
 
             # Определяем период
             period = "месяц"
-            if 'год' in text_to_check or 'year' in text_to_check or 'annual' in text_to_check:
+            if any(x in text_to_check for x in ['год', 'year', 'annual', 'ежегодно']):
                 period = "год"
 
             result = {
@@ -1050,7 +1099,7 @@ class EmailSubscriptionParser:
                 'next_payment': None
             }
 
-            logger.info(f"✅ Извлечено: {result}")
+            logger.info(f"✅ Извлечено: {name} - {price} {currency} ({period})")
             return result
 
         except Exception as e:
