@@ -8,7 +8,7 @@ import logging
 import json
 import aiohttp
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone  # <-- ВАЖНО: добавлен timezone
 from typing import List, Optional, Dict
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -226,7 +226,7 @@ class Notification(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=False)
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=datetime.now(timezone.utc))
     type = Column(String)
     message = Column(String)
 
@@ -238,7 +238,7 @@ class AIAnalysis(Base):
     __tablename__ = "ai_analysis"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     analysis_text = Column(String, nullable=False)
     recommendations = Column(String, nullable=True)
 
@@ -384,9 +384,9 @@ def authenticate_user(db: Session, email: str, password: str):
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -459,8 +459,7 @@ async def check_and_send_notifications():
     """Проверка подписок и отправка уведомлений"""
     db = SessionLocal()
     try:
-        now = datetime.utcnow()
-
+        now = datetime.now(timezone.utc)
         # 1. Проверка на 5 минут
         five_minute_subs = db.query(Subscription).filter(
             Subscription.next_payment <= now + timedelta(minutes=5),
@@ -626,7 +625,7 @@ async def get_ai_analysis(user_id: int, db: Session) -> List[str]:
                 monthly = s.price
             total_monthly += monthly
 
-            minutes_to = int((s.next_payment - datetime.utcnow()).total_seconds() / 60)
+            minutes_to = int((s.next_payment - datetime.now(timezone.utc)).total_seconds() / 60)
 
             subscriptions_data.append({
                 "name": s.name,
@@ -706,7 +705,7 @@ def get_fallback_advice(subs: List[Subscription]) -> List[str]:
     upcoming = []
     urgent = []
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     for s in subs:
         if s.period == "год":
@@ -914,7 +913,7 @@ class EmailSubscriptionParser:
         try:
             self.imap.select('INBOX')
 
-            since_date = (datetime.now() - timedelta(days=days_back)).strftime("%d-%b-%Y")
+            since_date = (datetime.now(timezone.utc) - timedelta(days=days_back)).strftime("%d-%b-%Y")
             search_criteria = f'(SINCE "{since_date}")'
 
             typ, message_ids = self.imap.search(None, 'ALL', search_criteria)
@@ -1183,28 +1182,54 @@ async def serve_frontend():
 # Аутентификация
 @app.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    try:
+        logger.info(f"=== REGISTRATION ATTEMPT ===")
+        logger.info(f"Email: {user.email}")
 
-    if len(user.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        # Проверка существования пользователя
+        db_user = db.query(User).filter(User.email == user.email).first()
+        if db_user:
+            logger.warning(f"User already exists: {user.email}")
+            raise HTTPException(status_code=400, detail="Email already registered")
 
-    hashed = get_password_hash(user.password)
-    new_user = User(email=user.email, hashed_password=hashed)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        # Проверка длины пароля
+        if len(user.password) < 6:
+            logger.warning(f"Password too short for {user.email}")
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
-    default_category = Category(user_id=new_user.id, name="Развлечения", color="#9b59b6")
-    db.add(default_category)
+        # Хеширование пароля
+        logger.info(f"Hashing password for {user.email}")
+        hashed = get_password_hash(user.password)
 
-    test_category = Category(user_id=new_user.id, name="ТЕСТ(КРАСНАЯ)", color="#e74c3c", is_test=True)
-    db.add(test_category)
-    db.commit()
+        # Создание пользователя
+        new_user = User(email=user.email, hashed_password=hashed)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        logger.info(f"User created with ID: {new_user.id}")
 
-    access_token = create_access_token(data={"sub": new_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+        # Создание категорий по умолчанию
+        logger.info(f"Creating default categories for user {new_user.id}")
+        default_category = Category(user_id=new_user.id, name="Развлечения", color="#9b59b6")
+        db.add(default_category)
+
+        test_category = Category(user_id=new_user.id, name="ТЕСТ(КРАСНАЯ)", color="#e74c3c", is_test=True)
+        db.add(test_category)
+        db.commit()
+        logger.info(f"Categories created successfully")
+
+        # Создание токена
+        access_token = create_access_token(data={"sub": new_user.email})
+        logger.info(f"Registration successful for {user.email}")
+
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"REGISTRATION ERROR: {str(e)}")
+        logger.error(f"Error details:", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 
 @app.post("/login", response_model=Token)
@@ -1669,7 +1694,7 @@ async def analytics(
     upcoming = []
     urgent = []
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     for s in subs:
         if s.period == "год":
@@ -1757,7 +1782,7 @@ def import_from_email_old(
     created = []
 
     for s in selected:
-        next_pay = datetime.utcnow() + timedelta(days=random.randint(1, 30))
+        next_pay = datetime.now(timezone.utc) + timedelta(days=random.randint(1, 30))
         next_pay = next_pay.replace(hour=12, minute=0, second=0)
         sub = Subscription(
             user_id=current_user.id,
