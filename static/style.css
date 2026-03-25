@@ -1,0 +1,1229 @@
+/* Современный iOS стиль */
+:root {
+    --ios-blue: #007AFF;
+    --ios-light-blue: #E3F2FF;
+    --ios-gray: #8E8E93;
+    --ios-light-gray: #F2F2F7;
+    --ios-dark: #1C1C1E;
+    --ios-white: #FFFFFF;
+    --ios-green: #34C759;
+    --ios-red: #FF3B30;
+    --ios-orange: #FF9500;
+    --ios-purple: #AF52DE;
+    --ios-yellow: #FFCC00;
+    --ios-teal: #5AC8FA;
+    --ios-indigo: #5856D6;
+    --ios-pink: #FF2D55;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--ios-light-gray);
+    color: var(--ios-dark);
+    line-height: 1.5;
+    padding: 20px;
+}
+
+/* iOS карточки */
+.ios-card {
+    background: var(--ios-white);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Заголовок как в iOS */
+header {
+    background: var(--ios-white);
+    border-radius: 20px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--ios-blue), var(--ios-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+}
+
+/* Аутентификация */
+.auth-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.auth-form input {
+    padding: 12px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    font-size: 1rem;
+    background: var(--ios-light-gray);
+    transition: all 0.3s ease;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+.auth-form button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 14px;
+    background: var(--ios-blue);
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+}
+
+.auth-form button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.3);
+}
+
+.auth-form button:active {
+    transform: scale(0.98);
+}
+
+#user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#user-email {
+    font-weight: 500;
+    color: var(--ios-dark);
+}
+
+#logout-btn {
+    padding: 8px 16px;
+    background: var(--ios-light-gray);
+    color: var(--ios-red);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#logout-btn:hover {
+    background: var(--ios-red);
+    color: white;
+}
+
+/* Основной контент */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Вкладки как в iOS */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    background: var(--ios-white);
+    padding: 8px;
+    border-radius: 30px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    background: transparent;
+    color: var(--ios-gray);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+}
+
+.tab-btn:hover {
+    background: var(--ios-light-gray);
+}
+
+.tab-btn.active {
+    background: var(--ios-blue);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Заголовки секций */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ios-dark);
+    letter-spacing: -0.5px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Кнопки в стиле iOS */
+.btn-primary {
+    background: var(--ios-blue);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+}
+
+.btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.3);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background: var(--ios-light-gray);
+    color: var(--ios-blue);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #e5e5ea;
+}
+
+/* Сетки карточек */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+/* Карточки подписок в стиле iOS */
+.sub-card {
+    background: var(--ios-white);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    border-left: 4px solid;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sub-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+}
+
+.sub-card h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--ios-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sub-card .category-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 16px;
+    align-self: flex-start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sub-card .price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ios-dark);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.sub-card .next-payment {
+    font-size: 0.95rem;
+    color: var(--ios-gray);
+    margin-bottom: 8px;
+}
+
+.sub-card .auto-renewal {
+    font-size: 0.95rem;
+    color: var(--ios-green);
+    margin-bottom: 16px;
+}
+
+.sub-card .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.sub-card .actions button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sub-card .edit-btn {
+    background: var(--ios-light-gray);
+    color: var(--ios-blue);
+}
+
+.sub-card .edit-btn:hover {
+    background: #e5e5ea;
+}
+
+.sub-card .delete-btn {
+    background: var(--ios-light-gray);
+    color: var(--ios-red);
+}
+
+.sub-card .delete-btn:hover {
+    background: var(--ios-red);
+    color: white;
+}
+
+/* Карточки категорий */
+.category-card {
+    background: var(--ios-white);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-left: 4px solid;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.category-info h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.category-count {
+    font-size: 0.9rem;
+    color: var(--ios-gray);
+}
+
+.category-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.category-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.category-edit {
+    background: var(--ios-light-gray);
+    color: var(--ios-blue);
+}
+
+.category-delete {
+    background: var(--ios-light-gray);
+    color: var(--ios-red);
+}
+
+.category-edit:hover {
+    background: var(--ios-blue);
+    color: white;
+}
+
+.category-delete:hover {
+    background: var(--ios-red);
+    color: white;
+}
+
+/* Аналитика в стиле iOS */
+.analytics-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.chart-container, .stats {
+    background: var(--ios-white);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats p {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--ios-gray);
+}
+
+.stats strong {
+    color: var(--ios-dark);
+    font-weight: 600;
+}
+
+#total-monthly {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--ios-blue);
+    display: block;
+    margin-top: 8px;
+    letter-spacing: -1px;
+}
+
+#upcoming-list, #urgent-list {
+    list-style: none;
+    margin-top: 16px;
+}
+
+#upcoming-list li, #urgent-list li {
+    padding: 12px 16px;
+    background: var(--ios-light-gray);
+    border-radius: 12px;
+    margin: 8px 0;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+#upcoming-list li {
+    border-left: 4px solid var(--ios-orange);
+}
+
+#urgent-list li {
+    border-left: 4px solid var(--ios-red);
+    background: rgba(255, 59, 48, 0.05);
+    font-weight: 600;
+    animation: urgentPulse 2s infinite;
+}
+
+@keyframes urgentPulse {
+    0% { background: rgba(255, 59, 48, 0.05); }
+    50% { background: rgba(255, 59, 48, 0.1); }
+    100% { background: rgba(255, 59, 48, 0.05); }
+}
+
+/* AI советы */
+#ai-advice {
+    margin-top: 40px;
+}
+
+.advice-box {
+    background: var(--ios-white);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.advice-item {
+    padding: 16px;
+    border-left: 4px solid var(--ios-blue);
+    background: var(--ios-light-gray);
+    margin-bottom: 12px;
+    border-radius: 12px;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+}
+
+.advice-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--ios-white);
+    padding: 32px;
+    border-radius: 28px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    font-size: 28px;
+    font-weight: 300;
+    cursor: pointer;
+    color: var(--ios-gray);
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close:hover {
+    background: var(--ios-light-gray);
+    color: var(--ios-red);
+}
+
+#sub-form label, #category-form label {
+    display: block;
+    margin-bottom: 20px;
+    font-weight: 500;
+    color: var(--ios-dark);
+}
+
+#sub-form input, #sub-form select,
+#category-form input {
+    width: 100%;
+    padding: 12px 16px;
+    margin-top: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    font-size: 1rem;
+    background: var(--ios-light-gray);
+    transition: all 0.2s ease;
+}
+
+#sub-form input:focus, #sub-form select:focus,
+#category-form input:focus {
+    outline: none;
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+#sub-form input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-left: 12px;
+    accent-color: var(--ios-blue);
+}
+
+#category-color {
+    height: 50px;
+    padding: 5px;
+}
+
+/* Уведомления в стиле iOS */
+.notification-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 8px 12px;
+    position: relative;
+    transition: all 0.2s ease;
+    border-radius: 30px;
+}
+
+.icon-btn:hover {
+    background: var(--ios-light-gray);
+    transform: scale(1.1);
+}
+
+.notifications-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 380px;
+    max-height: 500px;
+    background: var(--ios-white);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.notifications-panel.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notifications-header {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notifications-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.notification-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Toggle switch в стиле iOS */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e5e5ea;
+    transition: .3s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--ios-blue);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.notifications-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 12px;
+    transition: background 0.2s ease;
+}
+
+.notification-item:hover {
+    background: var(--ios-light-gray);
+}
+
+.notification-item.test {
+    background: linear-gradient(to right, rgba(175, 82, 222, 0.05), transparent);
+    border-left: 4px solid var(--ios-purple);
+}
+
+.notification-item.upcoming {
+    border-left: 4px solid var(--ios-orange);
+}
+
+.notification-item.urgent {
+    border-left: 4px solid var(--ios-red);
+    background: rgba(255, 59, 48, 0.05);
+}
+
+.notification-icon {
+    font-size: 1.3rem;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    color: var(--ios-gray);
+    margin-bottom: 4px;
+}
+
+.notification-time {
+    font-size: 0.8rem;
+    color: #c6c6c8;
+}
+
+/* Тестовая подписка */
+.test-sub {
+    border: 2px dashed var(--ios-red);
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.05), transparent);
+}
+
+.test-sub::before {
+    content: "🧪 ТЕСТ";
+    position: absolute;
+    top: -12px;
+    right: 16px;
+    background: var(--ios-red);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+}
+
+/* Стили для импорта */
+.import-container {
+    background: var(--ios-white);
+    border-radius: 28px;
+    padding: 32px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-box {
+    background: var(--ios-light-blue);
+    border-left: 4px solid var(--ios-blue);
+    padding: 16px 20px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    color: var(--ios-dark);
+}
+
+.import-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--ios-dark);
+    font-size: 0.95rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    font-size: 1rem;
+    background: var(--ios-light-gray);
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+.password-help {
+    background: var(--ios-light-gray);
+    padding: 20px;
+    border-radius: 16px;
+    margin: 24px 0;
+}
+
+.password-help ul {
+    margin: 12px 0 0 20px;
+    color: var(--ios-gray);
+}
+
+.password-help li {
+    margin: 8px 0;
+}
+
+.password-help a {
+    color: var(--ios-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.import-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 20px 0;
+    border-radius: 16px;
+}
+
+/* Прогресс бар в стиле iOS */
+.import-progress {
+    background: linear-gradient(135deg, var(--ios-blue), var(--ios-purple));
+    border-radius: 24px;
+    padding: 28px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 122, 255, 0.3);
+    animation: pulse 2s infinite;
+    margin-top: 24px;
+}
+
+.progress-bar-container {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    height: 8px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: white;
+    border-radius: 12px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    font-size: 0.95rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    opacity: 0.9;
+    font-size: 0.85rem;
+}
+
+/* Результаты импорта */
+.import-results {
+    margin-top: 24px;
+    padding: 24px;
+    background: var(--ios-white);
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    animation: fadeIn 0.5s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.import-results h4 {
+    color: var(--ios-dark);
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+}
+
+.success-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.success-message h4 {
+    color: var(--ios-green);
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+}
+
+/* Toast уведомления в стиле iOS */
+.import-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    min-width: 360px;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 30px 50px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.import-toast.success {
+    border-left: 4px solid var(--ios-green);
+}
+
+.import-toast.error {
+    border-left: 4px solid var(--ios-red);
+}
+
+.toast-header {
+    padding: 18px 22px;
+    background: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toast-icon {
+    font-size: 1.4rem;
+}
+
+.toast-title {
+    flex: 1;
+    font-weight: 600;
+    color: var(--ios-dark);
+    font-size: 1.1rem;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: var(--ios-gray);
+    padding: 0 10px;
+    transition: all 0.2s;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.toast-close:hover {
+    background: var(--ios-light-gray);
+    color: var(--ios-red);
+    transform: rotate(90deg);
+}
+
+.toast-body {
+    padding: 22px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.toast-body pre {
+    font-family: -apple-system, monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ios-dark);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+/* Импортированные подписки */
+.imported-badge {
+    display: inline-block;
+    background: var(--ios-purple);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 8px;
+    letter-spacing: 0.3px;
+}
+
+/* Анимации */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.9; }
+    50% { opacity: 1; }
+    100% { opacity: 0.9; }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes highlight {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 var(--ios-green); }
+    50% { transform: scale(1.02); box-shadow: 0 0 30px var(--ios-green); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 var(--ios-green); }
+}
+
+.sub-card.new {
+    animation: highlight 1.5s ease;
+}
+
+/* Адаптивность для iOS */
+@media (max-width: 700px) {
+    body {
+        padding: 12px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .auth-form {
+        flex-direction: column;
+    }
+
+    .auth-form input, .auth-form button {
+        width: 100%;
+    }
+
+    .tabs {
+        flex-direction: column;
+        border-radius: 20px;
+    }
+
+    .tab-btn {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        flex-direction: column;
+    }
+
+    .analytics-container {
+        grid-template-columns: 1fr;
+    }
+
+    .notifications-panel {
+        width: calc(100vw - 40px);
+        right: -70px;
+    }
+
+    .import-toast {
+        left: 12px;
+        right: 12px;
+        min-width: auto;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Стили для скроллбара в iOS стиле */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ios-light-gray);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c6c6c8;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ios-gray);
+}
