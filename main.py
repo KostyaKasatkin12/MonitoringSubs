@@ -910,73 +910,97 @@ class EmailSubscriptionParser:
         return body
 
     async def extract_subscription_info_with_ai(self, subject: str, body: str, from_addr: str) -> Optional[Dict]:
+        """Упрощенный парсер подписок из писем"""
         try:
-            import json
-            import re
+            logger.info(f"📧 Анализ письма: {subject[:100]}")
+            logger.info(f"✉️ От: {from_addr}")
 
-            text_to_analyze = f"""
-Тема: {subject}
-Отправитель: {from_addr}
-Текст: {body[:1500]}
-"""
+            # Проверяем ключевые слова в теме и теле
+            text_to_check = (subject + " " + body[:500]).lower()
 
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Subscription Monitor"
+            # Слова-маркеры подписок
+            subscription_keywords = [
+                'подписка', 'subscription', 'оплата', 'payment', 'списание',
+                'renewal', 'продление', 'invoice', 'счет', 'receipt', 'чек'
+            ]
+
+            is_subscription = any(keyword in text_to_check for keyword in subscription_keywords)
+
+            if not is_subscription:
+                logger.info(f"❌ Не похоже на подписку: {subject}")
+                return None
+
+            logger.info(f"✅ Похоже на подписку: {subject}")
+
+            # Пытаемся найти название сервиса
+            name = None
+
+            # Из отправителя
+            if '@' in from_addr:
+                # Пробуем извлечь домен
+                domain = from_addr.split('@')[1].split('.')[0].lower()
+                if domain in ['netflix', 'spotify', 'apple', 'google', 'yandex', 'mail', 'youtube']:
+                    name = domain.capitalize()
+
+            # Из темы
+            common_services = {
+                'netflix': 'Netflix', 'spotify': 'Spotify', 'apple': 'Apple',
+                'google': 'Google', 'yandex': 'Яндекс', 'mail.ru': 'Mail.ru',
+                'youtube': 'YouTube', 'amazon': 'Amazon', 'paypal': 'PayPal',
+                'adobe': 'Adobe', 'microsoft': 'Microsoft', 'notion': 'Notion'
             }
 
-            prompt = f"""Проанализируй это письмо и определи, является ли оно уведомлением о подписке.
-Если да, то извлеки информацию в формате JSON.
-Если нет, верни {{"is_subscription": false}}.
+            for service, full_name in common_services.items():
+                if service in text_to_check:
+                    name = full_name
+                    break
 
-Письмо:
-{text_to_analyze}
+            if not name:
+                name = "Неизвестный сервис"
 
-Ответ должен быть ТОЛЬКО в формате JSON:
-{{
-  "is_subscription": true/false,
-  "name": "название сервиса",
-  "price": 999.99,
-  "currency": "RUB/USD/EUR",
-  "period": "месяц/год/неделя",
-  "next_payment_date": "ГГГГ-ММ-ДД"
-}}"""
+            # Пытаемся найти цену
+            price = None
+            price_patterns = [
+                r'(\d+[\.,]?\d*)\s*₽',
+                r'(\d+[\.,]?\d*)\s*руб',
+                r'(\d+[\.,]?\d*)\s*\$',
+                r'(\d+[\.,]?\d*)\s*USD',
+                r'(\d+[\.,]?\d*)\s*EUR',
+                r'price:?\s*(\d+[\.,]?\d*)',
+                r'sum:?\s*(\d+[\.,]?\d*)'
+            ]
 
-            data = {
-                "model": "openai/gpt-3.5-turbo",
-                "messages": [
-                    {"role": "system", "content": "Ты эксперт по анализу писем. Отвечай только в формате JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1,
-                "max_tokens": 300
+            for pattern in price_patterns:
+                match = re.search(pattern, body[:1000], re.IGNORECASE)
+                if match:
+                    price = float(match.group(1).replace(',', '.'))
+                    break
+
+            # Определяем валюту
+            currency = "RUB"
+            if 'usd' in text_to_check or '$' in text_to_check:
+                currency = "USD"
+            elif 'eur' in text_to_check or '€' in text_to_check:
+                currency = "EUR"
+
+            # Определяем период
+            period = "месяц"
+            if 'год' in text_to_check or 'year' in text_to_check or 'annual' in text_to_check:
+                period = "год"
+
+            result = {
+                'name': name,
+                'price': price if price else 0,
+                'currency': currency,
+                'period': period,
+                'next_payment': None
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(OPENROUTER_URL, headers=headers, json=data, timeout=30) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        ai_response = result['choices'][0]['message']['content']
+            logger.info(f"✅ Извлечено: {result}")
+            return result
 
-                        json_match = re.search(r'\{.*\}', ai_response, re.DOTALL)
-                        if json_match:
-                            data = json.loads(json_match.group())
-
-                            if data.get('is_subscription', False):
-                                return {
-                                    'name': data.get('name', 'Неизвестно'),
-                                    'price': float(data.get('price', 0)),
-                                    'currency': data.get('currency', 'RUB'),
-                                    'period': data.get('period', 'месяц'),
-                                    'next_payment': data.get('next_payment_date')
-                                }
-                            else:
-                                return None
-                    return None
         except Exception as e:
-            logger.error(f"Ошибка AI анализа: {e}")
+            logger.error(f"Ошибка анализа письма: {e}")
             return None
 
     async def search_subscriptions(self, days_back: int = 180) -> List[Dict]:
@@ -990,19 +1014,21 @@ class EmailSubscriptionParser:
         try:
             self.imap.select('INBOX')
 
-            since_date = (datetime.now(timezone.utc) - timedelta(days=days_back)).strftime("%d-%b-%Y")
+            since_date = (datetime.now() - timedelta(days=days_back)).strftime("%d-%b-%Y")
             search_criteria = f'(SINCE "{since_date}")'
 
             typ, message_ids = self.imap.search(None, 'ALL', search_criteria)
 
             if typ != 'OK' or not message_ids[0]:
+                logger.warning("Нет писем для анализа")
                 return []
 
             total = len(message_ids[0].split())
             logger.info(f"📧 Найдено писем: {total}")
 
-            for msg_id in message_ids[0].split():
+            for idx, msg_id in enumerate(message_ids[0].split()):
                 self.processed_count += 1
+                logger.info(f"📨 Обработка письма {idx + 1}/{total}")
 
                 try:
                     typ, msg_data = self.imap.fetch(msg_id, '(RFC822)')
@@ -1020,6 +1046,9 @@ class EmailSubscriptionParser:
                     from_header = msg.get('From', '')
                     body = self._get_email_body(msg)
 
+                    logger.info(f"📧 Тема: {subject[:100]}")
+                    logger.info(f"✉️ От: {from_header}")
+
                     sub_info = await self.extract_subscription_info_with_ai(subject, body, from_header)
 
                     if sub_info:
@@ -1027,10 +1056,16 @@ class EmailSubscriptionParser:
                         sub_info['source_email'] = self.email
                         sub_info['source_provider'] = self.provider
                         subscriptions.append(sub_info)
+                        logger.info(
+                            f"✅ НАЙДЕНА ПОДПИСКА: {sub_info['name']} - {sub_info['price']} {sub_info['currency']}")
+                    else:
+                        logger.info(f"❌ Не найдено подписки в письме")
 
                 except Exception as e:
-                    logger.error(f"Ошибка обработки письма: {e}")
+                    logger.error(f"Ошибка обработки письма {idx + 1}: {e}")
                     continue
+
+            logger.info(f"📊 ИТОГО: обработано {self.processed_count}, найдено {self.found_count} подписок")
 
         except Exception as e:
             logger.error(f"Ошибка поиска: {e}")
