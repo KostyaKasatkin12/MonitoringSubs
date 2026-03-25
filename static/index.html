@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мониторинг подписок</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Управление подписками</h1>
+        <div id="auth-section">
+            <form id="login-form" class="auth-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Пароль" required>
+                <button type="submit" id="login-btn">Вход</button>
+                <button type="button" id="register-btn">Регистрация</button>
+            </form>
+            <div id="user-info" style="display: none;">
+                <span id="user-email"></span>
+                <div class="notification-wrapper">
+                    <button id="notifications-btn" class="icon-btn">🔔</button>
+                    <div id="notifications-panel" class="notifications-panel">
+                        <div class="notifications-header">
+                            <h3>Уведомления</h3>
+                            <div class="notification-controls">
+                                <label class="toggle-switch" title="Основные уведомления">
+                                    <input type="checkbox" id="notification-toggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label class="toggle-switch" title="Уведомления за 5 минут">
+                                    <input type="checkbox" id="five-minute-toggle" checked>
+                                    <span class="toggle-slider" style="background-color: #e74c3c;"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <ul id="notifications-list" class="notifications-list"></ul>
+                    </div>
+                </div>
+                <button id="logout-btn">Выйти</button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app" style="display: none;">
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="subscriptions">Подписки</button>
+            <button class="tab-btn" data-tab="categories">Категории</button>
+            <button class="tab-btn" data-tab="import">📧 Импорт</button>
+        </div>
+
+        <!-- Вкладка подписок -->
+        <section id="subscriptions" class="tab-content active">
+            <div class="section-header">
+                <h2>Мои подписки</h2>
+                <div class="header-actions">
+                    <button id="add-sub-btn" class="btn-primary">+ Добавить подписку</button>
+                    <button id="import-email-btn" class="btn-secondary">📧 Импорт (тест)</button>
+                </div>
+            </div>
+            <div id="subs-list" class="cards-grid"></div>
+        </section>
+
+        <!-- Вкладка категорий -->
+        <section id="categories" class="tab-content">
+            <div class="section-header">
+                <h2>Категории</h2>
+                <button id="add-category-btn" class="btn-primary">+ Добавить категорию</button>
+            </div>
+            <div id="categories-list" class="categories-grid"></div>
+        </section>
+
+        <!-- Вкладка импорта -->
+        <section id="import" class="tab-content">
+            <div class="section-header">
+                <h2>📧 Импорт подписок из почты</h2>
+            </div>
+
+            <div class="import-container">
+                <div class="info-box">
+                    <p>🔐 <strong>Безопасный импорт</strong> - используйте пароль приложения, а не основной пароль!</p>
+                </div>
+
+                <div class="import-form">
+                    <div class="form-group">
+                        <label for="email-provider">Провайдер:</label>
+                        <select id="email-provider" class="form-control">
+                            <option value="auto">Автоопределение</option>
+                            <option value="gmail">Gmail</option>
+                            <option value="yandex">Яндекс</option>
+                            <option value="mailru">Mail.ru</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="import-email">Email:</label>
+                        <input type="email" id="import-email" class="form-control"
+                               placeholder="Ваш email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="import-password">Пароль приложения:</label>
+                        <input type="password" id="import-password" class="form-control"
+                               placeholder="Пароль приложения" required>
+                    </div>
+
+                    <div class="password-help">
+                        <p>🔑 <strong>Как получить пароль приложения:</strong></p>
+                        <ul>
+                            <li><b>Gmail:</b> <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a></li>
+                            <li><b>Яндекс:</b> <a href="https://passport.yandex.ru/account/passwords" target="_blank">passport.yandex.ru/account/passwords</a></li>
+                            <li><b>Mail.ru:</b> <a href="https://id.mail.ru/security" target="_blank">id.mail.ru/security</a></li>
+                        </ul>
+                    </div>
+
+                    <button onclick="startEmailImport()" class="import-btn btn-primary">
+                        🔍 Найти подписки в почте
+                    </button>
+                </div>
+
+                <!-- Статус импорта -->
+                <div id="import-status" class="import-status" style="display: none;"></div>
+
+                <!-- Прогресс бар -->
+                <div id="import-progress-container" class="import-progress" style="display: none;">
+                    <div class="progress-bar-container">
+                        <div id="import-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <div id="import-progress-text" class="progress-text">Подготовка к импорту...</div>
+                    <div class="progress-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-processed">0</span>
+                            <span class="stat-label">обработано</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-found">0</span>
+                            <span class="stat-label">найдено</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-time">0</span>
+                            <span class="stat-label">секунд</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Результаты импорта -->
+                <div id="import-results" class="import-results" style="display: none;">
+                    <h4>📊 Результаты импорта</h4>
+                    <div id="import-results-content"></div>
+                </div>
+
+                <div class="import-info">
+                    <h4>📊 Как это работает:</h4>
+                    <ol>
+                        <li>Вы создаете пароль приложения в своем почтовом сервисе</li>
+                        <li>Мы подключаемся к вашей почте через защищенный IMAP</li>
+                        <li>Анализируем письма с помощью ИИ для поиска подписок</li>
+                        <li>Извлекаем информацию о названии, цене и дате платежа</li>
+                        <li>Добавляем найденные подписки в ваш список</li>
+                    </ol>
+                    <p class="note">⏱ Поиск может занять несколько минут в зависимости от объема почты.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Аналитика -->
+        <section id="analytics">
+            <h2>Аналитика</h2>
+            <div class="analytics-container">
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="stats">
+                    <p><strong>Общие расходы в месяц:</strong> <span id="total-monthly">0</span> ₽</p>
+
+                    <h3>🚨 Срочные списания (5 минут)</h3>
+                    <ul id="urgent-list"></ul>
+
+                    <h3>⏰ Ближайшие списания (7 дней)</h3>
+                    <ul id="upcoming-list"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai-advice">
+            <h2>🤖 Советы ИИ</h2>
+            <div id="advice-list" class="advice-box"></div>
+        </section>
+    </main>
+
+    <!-- Модальное окно для подписки -->
+    <div id="sub-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="modal-title">Добавить подписку</h3>
+            <form id="sub-form">
+                <input type="hidden" id="sub-id">
+                <label>Название: <input type="text" id="sub-name" required></label>
+
+                <label>Категория:
+                    <select id="sub-category" required>
+                        <option value="">Выберите категорию</option>
+                    </select>
+                </label>
+
+                <label>Цена: <input type="number" step="0.01" id="sub-price" required></label>
+
+                <label>Валюта:
+                    <select id="sub-currency">
+                        <option value="RUB">RUB</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                </label>
+
+                <label>Период:
+                    <select id="sub-period">
+                        <option value="месяц">месяц</option>
+                        <option value="год">год</option>
+                    </select>
+                </label>
+
+                <label>Дата платежа: <input type="date" id="sub-next-payment" required></label>
+                <label>Время платежа: <input type="time" id="sub-next-time" value="12:00" required></label>
+
+                <label>Автопродление:
+                    <input type="checkbox" id="sub-auto-renewal" checked>
+                </label>
+
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для категории -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="category-modal-title">Добавить категорию</h3>
+            <form id="category-form">
+                <input type="hidden" id="category-id">
+                <label>Название: <input type="text" id="category-name" required></label>
+
+                <label>Цвет:
+                    <input type="color" id="category-color" value="#3498db">
+                </label>
+
+                <label>
+                    <input type="checkbox" id="category-is-test">
+                    Тестовая категория (для отладки уведомлений)
+                </label>
+
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
