@@ -425,9 +425,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        # Увеличим время жизни токена для отладки
+        expire = datetime.now(timezone.utc) + timedelta(days=7)  # 7 дней вместо 24 часов
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    logger.info(f"Token created for {data.get('sub')}, expires at {expire}")
     return encoded_jwt
 
 
@@ -437,7 +439,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Получение текущего пользователя из токена"""
     if not token:
+        logger.warning("No token provided")
         return None
 
     credentials_exception = HTTPException(
@@ -445,18 +449,52 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
+        # Декодируем токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+
         if email is None:
+            logger.warning("Token has no email subject")
             raise credentials_exception
+
         token_data = TokenData(email=email)
-    except JWTError:
+
+        # Проверяем срок действия токена
+        exp = payload.get("exp")
+        if exp:
+            exp_datetime = datetime.fromtimestamp(exp, tz=timezone.utc)
+            if exp_datetime < datetime.now(timezone.utc):
+                logger.warning(f"Token expired for {email}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token expired",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token signature expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.JWTError as e:
+        logger.warning(f"JWT Error: {e}")
+        raise credentials_exception
+    except Exception as e:
+        logger.error(f"Unexpected error decoding token: {e}")
         raise credentials_exception
 
+    # Ищем пользователя в базе данных
     user = db.query(User).filter(User.email == token_data.email).first()
+
     if user is None:
+        logger.warning(f"User not found: {token_data.email}")
         raise credentials_exception
+
+    logger.info(f"User authenticated: {user.email}")
     return user
 
 
@@ -1223,6 +1261,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def serve_frontend():
     return FileResponse("static/index.html")
 
+@app.get("/verify-token")
+async def verify_token(current_user: User = Depends(get_current_user)):
+    """Проверка валидности токена"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {
+        "valid": True,
+        "user_id": current_user.id,
+        "email": current_user.email
+    }
 
 # Аутентификация
 @app.post("/register", response_model=Token)
