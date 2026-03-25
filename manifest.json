@@ -1,0 +1,18 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "monitoringsubs",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "monitoringsubs",
+  "start_url": "https://monitoringsubs.onrender.com",
+  "theme_color": "#ffffff",
+  "categories": [
+    "finance",
+    "productivity",
+    "social",
+    "utilities"
+  ],
+  "lang": "ru"
+}
