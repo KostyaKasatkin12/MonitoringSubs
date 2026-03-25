@@ -99,10 +99,17 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     try {
         const response = await fetch(API_BASE + endpoint, options);
 
-        if (response.status === 401 && !endpoint.includes('check-notifications')) {
+        // Проверяем статус 401
+        if (response.status === 401) {
+            console.log('Unauthorized, clearing token');
             localStorage.removeItem('token');
             token = null;
+            currentUser = null;
             updateUIForAuth();
+
+            // Показываем сообщение пользователю
+            alert('Сессия истекла. Пожалуйста, войдите снова.');
+
             throw new Error('Сессия истекла. Пожалуйста, войдите снова.');
         }
 
@@ -110,7 +117,11 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.detail || `Ошибка ${response.status}`);
         }
-        return await response.json();
+
+        // Для пустых ответов возвращаем null
+        const text = await response.text();
+        return text ? JSON.parse(text) : null;
+
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         throw error;
