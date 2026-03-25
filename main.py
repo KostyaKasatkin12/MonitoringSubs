@@ -1012,7 +1012,12 @@ class EmailSubscriptionParser:
 async def process_email_import(creds: dict, db: Session):
     """Фоновая задача для импорта подписок с умной категоризацией"""
 
-    user = db.query(User).get(creds['user_id'])
+    # Используем session.get() вместо query.get()
+    user = db.get(User, creds['user_id'])
+    if not user:
+        logger.error(f"User {creds['user_id']} not found")
+        return
+
     added_subscriptions = []
     skipped_subscriptions = []
     categorized_counts = {}
@@ -1034,13 +1039,16 @@ async def process_email_import(creds: dict, db: Session):
             if isinstance(next_payment, str):
                 try:
                     next_payment = datetime.fromisoformat(next_payment)
+                    # Если дата без timezone, добавляем UTC
+                    if next_payment.tzinfo is None:
+                        next_payment = next_payment.replace(tzinfo=timezone.utc)
                 except:
-                    next_payment = datetime.now() + timedelta(days=30)
+                    next_payment = datetime.now(timezone.utc) + timedelta(days=30)
             else:
-                next_payment = datetime.now() + timedelta(days=30)
+                next_payment = datetime.now(timezone.utc) + timedelta(days=30)
 
             # Определяем категорию для подписки
-            category_name = '📦 Другое'  # Категория по умолчанию
+            category_name = '📦 Другое'
             name_lower = name.lower()
 
             for key, cat in SERVICE_CATEGORIES.items():
@@ -1081,7 +1089,7 @@ async def process_email_import(creds: dict, db: Session):
             ).first()
 
             if not category:
-                color = CATEGORY_COLORS.get(cat_name, '#8E8E93')  # Серый цвет по умолчанию
+                color = CATEGORY_COLORS.get(cat_name, '#8E8E93')
                 category = Category(
                     user_id=user.id,
                     name=cat_name,
@@ -1109,12 +1117,11 @@ async def process_email_import(creds: dict, db: Session):
 
             for existing in existing_subs:
                 if name_lower in existing.name.lower():
-                    # Если цена похожая, обновляем дату
                     price_diff = abs(existing.price - float(sub_info.get('price', 0)))
                     if price_diff < 1.0 or (existing.price > 0 and price_diff / existing.price < 0.1):
                         is_duplicate = True
                         existing.next_payment = next_payment
-                        existing.category_id = category.id  # Обновляем категорию
+                        existing.category_id = category.id
                         db.add(existing)
                         skipped_subscriptions.append(f"{name} (обновлена)")
                         break
@@ -1140,7 +1147,6 @@ async def process_email_import(creds: dict, db: Session):
                     'category': category_name
                 })
 
-                # Считаем по категориям
                 if category_name not in categorized_counts:
                     categorized_counts[category_name] = 0
                 categorized_counts[category_name] += 1
@@ -1159,7 +1165,7 @@ async def process_email_import(creds: dict, db: Session):
         if added_subscriptions:
             result_message += "**НОВЫЕ ПОДПИСКИ:**\n"
             for sub in added_subscriptions:
-                icon = sub['category'].split()[0]  # Берем эмодзи
+                icon = sub['category'].split()[0]
                 result_message += f"{icon} • **{sub['name']}** — {sub['price']} {sub['currency']}\n"
 
         if categorized_counts:
@@ -1180,12 +1186,12 @@ async def process_email_import(creds: dict, db: Session):
 
     except Exception as e:
         logger.error(f"❌ Ошибка импорта: {e}")
+        logger.error(f"Error details:", exc_info=True)
         await send_email_notification(
             user.email,
             "❌ Ошибка импорта",
             f"Произошла ошибка: {str(e)}"
         )
-
 
 # ---------- Инициализация FastAPI ----------
 @asynccontextmanager
