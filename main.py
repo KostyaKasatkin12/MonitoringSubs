@@ -365,14 +365,21 @@ def get_db():
 
 
 def verify_password(plain_password, hashed_password):
+    # Обрезаем пароль до 72 байт для проверки
+    if isinstance(plain_password, str):
+        plain_password = plain_password.encode('utf-8')
+    if len(plain_password) > 72:
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
-
 def get_password_hash(password):
-    if len(password.encode('utf-8')) > 72:
+    # bcrypt ограничение 72 байта
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    # Обрезаем до 72 байт
+    if len(password) > 72:
         password = password[:72]
     return pwd_context.hash(password)
-
 
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(User).filter(User.email == email).first()
@@ -1192,14 +1199,23 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             logger.warning(f"User already exists: {user.email}")
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        # Проверка длины пароля
-        if len(user.password) < 6:
+        # Проверка длины пароля в байтах
+        password_bytes = user.password.encode('utf-8')
+        if len(password_bytes) < 6:
             logger.warning(f"Password too short for {user.email}")
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
+        if len(password_bytes) > 72:
+            logger.warning(f"Password too long for {user.email} ({len(password_bytes)} bytes)")
+            # Обрезаем пароль до 72 байт
+            truncated_password = user.password[:72]
+            logger.info(f"Truncated password from {len(password_bytes)} to 72 bytes")
+        else:
+            truncated_password = user.password
+
         # Хеширование пароля
         logger.info(f"Hashing password for {user.email}")
-        hashed = get_password_hash(user.password)
+        hashed = get_password_hash(truncated_password)
 
         # Создание пользователя
         new_user = User(email=user.email, hashed_password=hashed)
